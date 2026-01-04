@@ -1,12 +1,10 @@
 {
-  "Author": "your name here",
-  "Name": "Sample Plugin",
-  "Punchline": "A short one-liner that shows up in /xlplugins.",
-  "Description": "A description that shows up in /xlplugins. List any major slash-command(s).",
+  "Author": "Bonkerino Chonkerino",
+  "Name": "Bonk count",
+  "Punchline": "Count bonk potential",
+  "Description": "See big bonk - press funny button",
   "ApplicableVersion": "any",
   "Tags": [
-    "sample",
-    "plugin",
-    "goats"
+    "utility"
   ]
 }
