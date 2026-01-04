@@ -1,0 +1,18 @@
+{
+  "Author": "Bonkerino Chonkerino",
+  "Name": "Bonk count",
+  "InternalName": "SamplePlugin",
+  "AssemblyVersion": "1.0.0.0",
+  "Description": "See big bonk - press funny button",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "utility"
+  ],
+  "DalamudApiLevel": 14,
+  "LoadRequiredState": 0,
+  "LoadSync": false,
+  "CanUnloadAsync": false,
+  "LoadPriority": 0,
+  "Punchline": "Count bonk potential",
+  "AcceptsFeedback": true
+}
