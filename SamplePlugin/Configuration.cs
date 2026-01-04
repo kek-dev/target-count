@@ -1,17 +1,19 @@
-﻿using Dalamud.Configuration;
+using Dalamud.Configuration;
 using System;
+using System.Numerics;
 
-namespace SamplePlugin;
+namespace UnpleasantPersonPlugin;
 
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = 0;
 
-    public bool IsConfigWindowMovable { get; set; } = true;
-    public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
+    public float TextSize { get; set; } = 200f;
+    public Vector2 CounterPosition { get; set; } = new Vector2(10, 10);
+    public bool HideWhenZero { get; set; } = false;
+    public bool DropShadow { get; set; } = true;
 
-    // The below exists just to make saving less cumbersome
     public void Save()
     {
         Plugin.PluginInterface.SavePluginConfig(this);

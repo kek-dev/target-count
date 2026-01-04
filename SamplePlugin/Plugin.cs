@@ -1,4 +1,5 @@
-﻿using Dalamud.Game.Command;
+using Dalamud.Game.Command;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -6,11 +7,13 @@ using System.IO;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.ManagedFontAtlas;
+using Dalamud.Interface.Utility;
 using System.Numerics;
 using System.Diagnostics;
-using SamplePlugin.Windows;
+using UnpleasantPersonPlugin.Windows;
 
-namespace SamplePlugin;
+namespace UnpleasantPersonPlugin;
 
 public sealed class Plugin : IDalamudPlugin
 {
@@ -21,11 +24,13 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPlayerState PlayerState { get; private set; } = null!;
     [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
     [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
+    [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
-
     public Configuration Configuration { get; init; }
+    
+    private IFontHandle? largeFontHandle = null;
 
-    public readonly WindowSystem WindowSystem = new("SamplePlugin");
+    public readonly WindowSystem WindowSystem = new("UnpleasantPersonPlugin");
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
     
@@ -37,7 +42,6 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
-        // You might normally want to embed resources and load them from the manifest stream
         var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
 
         ConfigWindow = new ConfigWindow(this);
@@ -46,28 +50,24 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
 
-        // Tell the UI system that we want our windows to be drawn through the window system
         PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
         PluginInterface.UiBuilder.Draw += DrawTargetCount;
+        
+        Framework.Update += OnFrameworkUpdate;
+        
+        BuildFonts();
 
-        // This adds a button to the plugin installer entry of this plugin which allows
-        // toggling the display status of the configuration ui
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUi;
-
-        // Adds another button doing the same but for the main ui of the plugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
-
-        // Add a simple message to the log with level set to information
-        // Use /xllog to open the log window in-game
-        // Example Output: 00:57:54.959 | INF | [SamplePlugin] ===A cool log message from Sample Plugin===
-        Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
     }
 
     public void Dispose()
     {
-        // Unregister all actions to not leak anything during disposal of plugin
+        Framework.Update -= OnFrameworkUpdate;
         PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
         PluginInterface.UiBuilder.Draw -= DrawTargetCount;
+        
+        largeFontHandle?.Dispose();
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
         
@@ -79,56 +79,108 @@ public sealed class Plugin : IDalamudPlugin
 
     public int CountPlayersTargetingMe()
     {
-        var localPlayer = ClientState.LocalPlayer;
+        var localPlayer = ObjectTable.LocalPlayer;
         if (localPlayer == null)
         {
-            Log.Warning("Local player is not available");
             return 0;
         }
 
-        int count = 0;
-        var localPlayerObjectId = localPlayer.ObjectId;
+        var localPlayerGameObjectId = localPlayer.GameObjectId;
 
+        int count = 0;
         foreach (var obj in ObjectTable)
         {
-            if (obj is Character character)
+            if (obj == null)
+                continue;
+
+            if (obj is IPlayerCharacter playerCharacter && 
+                playerCharacter.GameObjectId != localPlayerGameObjectId && 
+                obj.TargetObjectId == localPlayerGameObjectId)
             {
-                if (character.ObjectId != localPlayerObjectId && 
-                    character.TargetObjectId == localPlayerObjectId)
-                {
-                    count++;
-                }
+                count++;
             }
         }
 
         return count;
     }
     
-    private void DrawTargetCount()
+    private void OnFrameworkUpdate(IFramework framework)
     {
         if (updateTimer.ElapsedMilliseconds >= UpdateIntervalMs)
         {
             cachedTargetCount = CountPlayersTargetingMe();
             updateTimer.Restart();
         }
-        
+    }
+    
+    internal void BuildFonts()
+    {
+        largeFontHandle?.Dispose();
+        largeFontHandle = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e =>
+        {
+            e.OnPreBuild(tk =>
+            {
+                tk.Font = tk.AddDalamudDefaultFont(Configuration.TextSize);
+            });
+        });
+    }
+    
+    private void DrawTargetCount()
+    {
+
+        if (Configuration.HideWhenZero && cachedTargetCount == 0)
+        {
+            return;
+        }
+
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        ImGui.SetNextWindowPos(new Vector2(10, 10), ImGuiCond.Always);
+        ImGui.SetNextWindowPos(Configuration.CounterPosition, ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowBgAlpha(0.0f);
         
         ImGuiWindowFlags flags = ImGuiWindowFlags.NoTitleBar | 
                                  ImGuiWindowFlags.NoResize | 
-                                 ImGuiWindowFlags.NoMove | 
                                  ImGuiWindowFlags.NoScrollbar | 
-                                 ImGuiWindowFlags.NoInputs | 
                                  ImGuiWindowFlags.AlwaysAutoResize | 
                                  ImGuiWindowFlags.NoBackground;
         
         if (ImGui.Begin("TargetCountOverlay", flags))
         {
-            ImGui.SetWindowFontScale(3.0f);
-            ImGui.Text($"{cachedTargetCount}");
-            ImGui.SetWindowFontScale(1.0f);
+            var newPos = ImGui.GetWindowPos();
+            var posDiff = Vector2.Distance(newPos, Configuration.CounterPosition);
+            if (posDiff > 1.0f)
+            {
+                Configuration.CounterPosition = newPos;
+                Configuration.Save();
+            }
+
+            var text = $"{cachedTargetCount}";
+            
+            if (Configuration.DropShadow)
+            {
+                var shadowOffset = new Vector2(2, 2);
+                var shadowColor = ImGui.GetColorU32(new Vector4(0, 0, 0, 0.5f));
+                
+                if (largeFontHandle != null && largeFontHandle.Available)
+                {
+                    using (largeFontHandle.Push())
+                    {
+                        var textPos = ImGui.GetCursorScreenPos();
+                        var drawList = ImGui.GetWindowDrawList();
+                        drawList.AddText(textPos + shadowOffset, shadowColor, text);
+                        ImGui.Text(text);
+                    }
+                }
+            }
+            else
+            {
+                if (largeFontHandle != null && largeFontHandle.Available)
+                {
+                    using (largeFontHandle.Push())
+                    {
+                        ImGui.Text(text);
+                    }
+                }
+            }
         }
         ImGui.End();
         ImGui.PopStyleVar();
