@@ -6,15 +6,15 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "SamplePlugin/1.0.0.0": {
+      "UnpleasantPerson/1.0.0.1": {
         "runtime": {
-          "SamplePlugin.dll": {}
+          "UnpleasantPerson.dll": {}
         }
       }
     }
   },
   "libraries": {
-    "SamplePlugin/1.0.0.0": {
+    "UnpleasantPerson/1.0.0.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

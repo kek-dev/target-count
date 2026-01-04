@@ -4,8 +4,8 @@
         "Name": "Unpleasant Person - Bonk count",
         "Description": "See big bonk - press funny button",
         "Punchline": "Count bonk potential",
-        "InternalName": "SamplePlugin",
-        "AssemblyVersion": "1.0.0.0",
+        "InternalName": "UnpleasantPerson",
+        "AssemblyVersion": "1.0.0.1",
         "TestingAssemblyVersion": null,
         "RepoUrl": "https://github.com/kek-dev/target-count",
         "IconUrl": null,
@@ -15,9 +15,9 @@
         "IsTestingExclusive": false,
         "LastUpdate": 1735689600,
         "DownloadCount": 0,
-        "DownloadLinkInstall": "https://github.com/kek-dev/target-count/releases/download/1.0.0.0/Release.zip",
+        "DownloadLinkInstall": "https://github.com/kek-dev/target-count/releases/download/1.0.0.1/Release.zip",
         "DownloadLinkTesting": null,
-        "DownloadLinkUpdate": "https://github.com/kek-dev/target-count/releases/download/1.0.0.0/Release.zip",
+        "DownloadLinkUpdate": "https://github.com/kek-dev/target-count/releases/download/1.0.0.1/Release.zip",
         "Changelog": "Initial release - Counts players targeting you with customizable display"
     }
 ]

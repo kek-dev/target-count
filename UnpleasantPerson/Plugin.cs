@@ -120,7 +120,11 @@ public sealed class Plugin : IDalamudPlugin
         {
             e.OnPreBuild(tk =>
             {
-                tk.Font = tk.AddDalamudDefaultFont(Configuration.TextSize);
+                var config = new SafeFontConfig { SizePx = Configuration.TextSize };
+                var font = tk.AddDalamudAssetFont(Dalamud.DalamudAsset.NotoSansJpMedium, config);
+                config.MergeFont = font;
+                tk.AddGameSymbol(config);
+                tk.SetFontScaleMode(font, FontScaleMode.UndoGlobalScale);
             });
         });
     }
